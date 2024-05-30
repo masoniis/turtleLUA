@@ -11,12 +11,8 @@
       {
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [ 
-						bun
-            nodejs_20
-            nodePackages.typescript
-            nodePackages.typescript-language-server
-            nodePackages.prettier
-            nodePackages.eslint
+						lua
+						luarocks
 					];
         };
       }
