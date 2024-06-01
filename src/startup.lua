@@ -78,6 +78,7 @@ local function main(ws)
 				local responseT = luaify(response)
 				if (responseT.action == "responseId") then
 					turtleid = responseT.id
+					os.setComputerLabel(turtleid)
 				else
 					print("Received non-ID message: " .. response)
 				end
