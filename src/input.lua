@@ -102,7 +102,12 @@ local function main()
 					local luacode = load(responeTable.data)
 					if luacode then
 						print("Executing code: " .. responeTable.data)
-						luacode()
+						local success, fail = pcall(luacode)
+						if not success then
+							print("An error occurred in code execution: " .. fail)
+						else
+							print("Code executed successfully.")
+						end
 					else
 						print("Received non-code message: " .. responeTable.data)
 					end
