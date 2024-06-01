@@ -70,15 +70,17 @@ local function main()
 	local turtleid = ""
 
 	if ws then
-		print("Websocket success!")
-		ws.send(jsonify({ action = "setClientTag", data = "turtle" })) -- Send the client tag to the server
+		print("Websocket connected!")
 
 		while turtleid == "" do
+			ws.send(jsonify({ action = "setClientTag", data = "turtle" }))
 			local response, err = ws.receive()
 			if response then
 				local responseT = luaify(response)
-				if responseT.data then
-					turtleid = responseT.data
+				if (responseT.action == "responseId") then
+					turtleid = responseT.id
+				else
+					print("Received non-ID message: " .. response)
 				end
 			else
 				print("Failed to receive initial ID: " .. err)
