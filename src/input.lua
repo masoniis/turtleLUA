@@ -1,3 +1,5 @@
+local wsURL = "ws://73.229.134.181:80"
+
 -- Turn a flat table into a JSON string
 local function jsonify(flattable)
 	local function tableToJson(tbl)
@@ -47,23 +49,36 @@ local function turtleStats()
 	return stats
 end
 
-local wsURL = "ws://73.229.134.181:80"
+local function sendStats(ws, turtleid)
+	local stats = turtleStats()
+	ws.send(jsonify({
+		action = "turtleStats",
+		id = turtleid,
+		client = "turtle",
+		data = {
+			fuelLevel = stats.fuelLevel,
+			inspect = stats.inspect,
+			inspectInfo = stats.inspectInfo,
+			inventory = stats.inventory,
+		}
+	}))
+end
+
 local ws = http.websocket(wsURL)
 
 local function main()
-	-- Turtle identifier set on websocket connection
 	local turtleid = ""
 
 	if ws then
 		print("Websocket success!")
-		ws.send("turtle") -- Send the client tag to the server
+		ws.send(jsonify({ action = "setClientTag", data = "turtle" })) -- Send the client tag to the server
 
 		while turtleid == "" do
 			local response, err = ws.receive()
 			if response then
 				local responseT = luaify(response)
-				if responseT.id then
-					turtleid = responseT.id
+				if responseT.data then
+					turtleid = responseT.data
 				end
 			else
 				print("Failed to receive initial ID: " .. err)
@@ -72,26 +87,15 @@ local function main()
 		end
 
 		print("Turtle ID: " .. turtleid)
-		local message = { action = "newTurtle", id = turtleid, client = "turtle", data = "Hello world, I am a turtle!" }
-		-- print("Sending message: " .. jsonify(message))
-		ws.send(jsonify(message))
+		ws.send(jsonify({ action = "newTurtle", id = turtleid, client = "turtle", data = "Hello world, I am a turtle!" }))
+		-- sendStats(ws, turtleid)
 
 		while true do
-			local response, err = ws.receive()
+			local response, err = ws.receive(3)
 			if response then
 				local responeTable = luaify(response)
 				if responeTable.action == "requestTurtleStats" then
-					local stats = turtleStats()
-
-					ws.send(jsonify({
-						action = "turtleStats",
-						id = turtleid,
-						client = "turtle",
-						fuelLevel = stats.fuelLevel,
-						inspect = stats.inspect,
-						inspectInfo = stats.inspectInfo,
-						inventory = stats.inventory,
-					}))
+					sendStats(ws, turtleid)
 				else
 					local luacode = load(responeTable.data)
 					if luacode then
@@ -102,8 +106,10 @@ local function main()
 					end
 				end
 			else
-				print("Failed to receive message: " .. err)
-				break
+				-- sendStats(ws, turtleid)
+				if err then
+					print("An error occurred: " .. err)
+				end
 			end
 		end
 
